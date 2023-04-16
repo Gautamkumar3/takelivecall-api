@@ -8,6 +8,7 @@ const {
   findAllEventByUser,
   getSingleEvent,
   getSearchedResult,
+  deleteAllPendingRequest,
 } = require("../controller/event");
 const AuthMiddleware = require("../middleware/AuthMiddleware");
 

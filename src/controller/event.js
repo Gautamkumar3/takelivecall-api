@@ -80,6 +80,18 @@ const sendRequestToJoin = async (req, res) => {
       });
     }
 
+    const checkExpire = await EventModal.find({
+      date: { $lte: new Date() },
+      start_time: { $lte: new Date().getHours() },
+    });
+
+    if (checkExpire.length !== 0) {
+      return res.status(404).send({
+        status: "error",
+        message: "This event is started you can't join this event.",
+      });
+    }
+
     event.players.push({ user: userId, status: "requested", name: user_name });
     await event.save();
     return res.status(200).send({
@@ -132,6 +144,18 @@ const organiserCheckRequest = async (req, res) => {
       return res
         .status(400)
         .send({ status: "error", message: "Request already processed" });
+    }
+
+    const checkExpire = await EventModal.find({
+      date: { $lte: new Date() },
+      start_time: { $lte: new Date().getHours() },
+    });
+
+    if (checkExpire.length !== 0) {
+      return res.status(404).send({
+        status: "error",
+        message: "This event is started you can't update status",
+      });
     }
 
     request.status = status;
@@ -194,12 +218,12 @@ const findAllEventByUser = async (req, res) => {
 };
 
 const getSearchedResult = async (req, res) => {
-  console.log(req.query)
+  console.log(req.query);
   let keyword = {};
   if (req.query.q) {
     keyword = req.query.q;
   }
-  console.log(keyword);
+
   try {
     const searchedEvent = await EventModal.find({
       sport_name: { $regex: keyword, $options: "i" },
@@ -211,9 +235,32 @@ const getSearchedResult = async (req, res) => {
       data: searchedEvent,
     });
   } catch (er) {
-    return res.status(500).send({ status: "error", message: er.message,a:"Sdata" });
+    return res
+      .status(500)
+      .send({ status: "error", message: er.message, a: "Sdata" });
   }
 };
+
+async function deleteAllPendingRequest() {
+  await EventModal.updateMany(
+    {
+      date: { $lte: new Date() },
+      start_time: { $lte: new Date().getHours() },
+      "players.status": "requested",
+    },
+    {
+      $pull: {
+        players: {
+          status: "requested",
+        },
+      },
+    }
+  );
+}
+
+setInterval(() => {
+  deleteAllPendingRequest();
+}, 300000);
 
 module.exports = {
   createEvent,
