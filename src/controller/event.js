@@ -91,6 +91,7 @@ const sendRequestToJoin = async (req, res) => {
         message: "This event is started you can't join this event.",
       });
     }
+    console.log(checkExpire)
 
     event.players.push({ user: userId, status: "requested", name: user_name });
     await event.save();
