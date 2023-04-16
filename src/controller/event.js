@@ -69,6 +69,19 @@ const sendRequestToJoin = async (req, res) => {
         .send({ status: "error", message: "Event is full" });
     }
 
+    const checkExpire = await EventModal.findOne({
+      date: { $lte: new Date() },
+      start_time: { $lte: new Date().getHours() },
+      _id: eventId,
+    });
+
+    if (checkExpire) {
+      return res.status(404).send({
+        status: "error",
+        message: "This event is started you can't join this event.",
+      });
+    }
+
     const alreadyJoined = event.players.find((player) => {
       return player.user.toString() === userId;
     });
@@ -79,20 +92,6 @@ const sendRequestToJoin = async (req, res) => {
         message: "User has already joined the event",
       });
     }
-
-    const checkExpire = await EventModal.find({
-      date: { $lte: new Date() },
-      start_time: { $lte: new Date().getHours() },
-    });
-
-    if (checkExpire.length !== 0) {
-      return res.status(404).send({
-        status: "error",
-        message: "This event is started you can't join this event.",
-      });
-    }
-    console.log(checkExpire)
-
     event.players.push({ user: userId, status: "requested", name: user_name });
     await event.save();
     return res.status(200).send({
@@ -135,6 +134,19 @@ const organiserCheckRequest = async (req, res) => {
       (player) => player._id.toString() === playerId
     );
 
+    const checkExpire = await EventModal.findOne({
+      date: { $lte: new Date() },
+      start_time: { $lte: new Date().getHours() },
+      _id: eventId,
+    });
+
+    if (checkExpire) {
+      return res.status(404).send({
+        status: "error",
+        message: "This event is started you can't update status",
+      });
+    }
+
     if (!request) {
       return res
         .status(404)
@@ -145,18 +157,6 @@ const organiserCheckRequest = async (req, res) => {
       return res
         .status(400)
         .send({ status: "error", message: "Request already processed" });
-    }
-
-    const checkExpire = await EventModal.find({
-      date: { $lte: new Date() },
-      start_time: { $lte: new Date().getHours() },
-    });
-
-    if (checkExpire.length !== 0) {
-      return res.status(404).send({
-        status: "error",
-        message: "This event is started you can't update status",
-      });
     }
 
     request.status = status;
